@@ -195,11 +195,11 @@ async function dbSave(payload) {
 const uid = () => Math.random().toString(36).slice(2, 9);
 const COLORS = ['#e8e8e4','#94a3b8','#f87171','#fb923c','#fbbf24','#facc15','#a3e635','#4ade80','#2dd4bf','#38bdf8','#60a5fa','#a78bfa','#f472b6','#fb7185'];
 const mkStep = (t='') => ({ id:uid(), title:t, done:false, notes:'', date:'' });
-const mkTask = (t='') => ({ id:uid(), title:t, manual:false, mun:false, steps:[], open:false, notes:'', date:'' });
+const mkTask = (t='') => ({ id:uid(), title:t, manual:false, manualUnchecked:false, steps:[], open:false, notes:'', date:'' });
 const mkGoal = (t='', c='#60a5fa', type='goal') => ({ id:uid(), title:t, color:c, type, tasks:[], open:false, archived:false, notes:'' });
 
 function tDone(t) {
-  if (t.mun) return false;
+  if (t.manualUnchecked) return false;
   if (t.manual) return true;
   if (!t.steps.length) return false;
   return t.steps.every(s => s.done);
@@ -218,24 +218,24 @@ function gDone(g) { const {d,total}=gProg(g); return total>0&&d===total; }
 
 const DEF = [
   { id:'g1', title:'Move into my own house', color:'#e8e8e4', type:'goal', open:false, archived:false, notes:'', tasks:[
-    { id:'t1', title:'Research houses', manual:false, mun:false, open:false, notes:'', date:'', steps:[mkStep('Look at houses on Zillow using filters'),mkStep('Make sure houses are not RSO'),mkStep('Shortlist favorite houses'),mkStep('Plan a tour with broker'),mkStep('See houses'),mkStep('Pick favorite')] },
-    { id:'t2', title:'Get an offer accepted', manual:false, mun:false, open:false, notes:'', date:'', steps:[mkStep('Fill out paperwork'),mkStep('Send offer'),mkStep('Review counter offer'),mkStep('Send final offer')] },
-    { id:'t3', title:'Open escrow', manual:false, mun:false, open:false, notes:'', date:'', steps:[mkStep('Sign agreement'),mkStep('Pay Earnest Money Deposit')] },
-    { id:'t4', title:'Make house inspections', manual:false, mun:false, open:false, notes:'', date:'', steps:[mkStep('Schedule general inspection'),mkStep('Schedule sewer inspection'),mkStep('Schedule termites inspection'),mkStep('Pay inspections'),mkStep('Be present at inspections')] },
-    { id:'t5', title:'Get appraisal', manual:false, mun:false, open:false, notes:'', date:'', steps:[mkStep('Provide all necessary paperwork'),mkStep('Sign contract'),mkStep('Get appraisal')] },
-    { id:'t6', title:'Get loan', manual:false, mun:false, open:false, notes:'', date:'', steps:[mkStep('Provide all necessary paperwork'),mkStep('Sign contract'),mkStep('Get approved')] },
-    { id:'t7', title:'Remove all contingencies', manual:false, mun:false, open:false, notes:'', date:'', steps:[mkStep('Remove inspection contingency'),mkStep('Remove interest rate contingency'),mkStep('Remove loan contingency')] },
-    { id:'t8', title:'Make down payment', manual:false, mun:false, open:false, notes:'', date:'', steps:[mkStep('Make sure money needed is available'),mkStep('Deposit remainder of down payment')] },
-    { id:'t9', title:'Final touches', manual:false, mun:false, open:false, notes:'', date:'', steps:[mkStep('Make necessary improvements after inspections'),mkStep('Negotiate repairs to be made by seller'),mkStep('Make sure all paperwork is done'),mkStep('Get home insurance')] },
-    { id:'t10', title:'Move', manual:false, mun:false, open:false, notes:'', date:'', steps:[mkStep('Research movers in the area'),mkStep('Get a quote'),mkStep('Schedule movers'),mkStep('Move')] },
+    { id:'t1', title:'Research houses', manual:false, manualUnchecked:false, open:false, notes:'', date:'', steps:[mkStep('Look at houses on Zillow using filters'),mkStep('Make sure houses are not RSO'),mkStep('Shortlist favorite houses'),mkStep('Plan a tour with broker'),mkStep('See houses'),mkStep('Pick favorite')] },
+    { id:'t2', title:'Get an offer accepted', manual:false, manualUnchecked:false, open:false, notes:'', date:'', steps:[mkStep('Fill out paperwork'),mkStep('Send offer'),mkStep('Review counter offer'),mkStep('Send final offer')] },
+    { id:'t3', title:'Open escrow', manual:false, manualUnchecked:false, open:false, notes:'', date:'', steps:[mkStep('Sign agreement'),mkStep('Pay Earnest Money Deposit')] },
+    { id:'t4', title:'Make house inspections', manual:false, manualUnchecked:false, open:false, notes:'', date:'', steps:[mkStep('Schedule general inspection'),mkStep('Schedule sewer inspection'),mkStep('Schedule termites inspection'),mkStep('Pay inspections'),mkStep('Be present at inspections')] },
+    { id:'t5', title:'Get appraisal', manual:false, manualUnchecked:false, open:false, notes:'', date:'', steps:[mkStep('Provide all necessary paperwork'),mkStep('Sign contract'),mkStep('Get appraisal')] },
+    { id:'t6', title:'Get loan', manual:false, manualUnchecked:false, open:false, notes:'', date:'', steps:[mkStep('Provide all necessary paperwork'),mkStep('Sign contract'),mkStep('Get approved')] },
+    { id:'t7', title:'Remove all contingencies', manual:false, manualUnchecked:false, open:false, notes:'', date:'', steps:[mkStep('Remove inspection contingency'),mkStep('Remove interest rate contingency'),mkStep('Remove loan contingency')] },
+    { id:'t8', title:'Make down payment', manual:false, manualUnchecked:false, open:false, notes:'', date:'', steps:[mkStep('Make sure money needed is available'),mkStep('Deposit remainder of down payment')] },
+    { id:'t9', title:'Final touches', manual:false, manualUnchecked:false, open:false, notes:'', date:'', steps:[mkStep('Make necessary improvements after inspections'),mkStep('Negotiate repairs to be made by seller'),mkStep('Make sure all paperwork is done'),mkStep('Get home insurance')] },
+    { id:'t10', title:'Move', manual:false, manualUnchecked:false, open:false, notes:'', date:'', steps:[mkStep('Research movers in the area'),mkStep('Get a quote'),mkStep('Schedule movers'),mkStep('Move')] },
   ]},
   { id:'h1', title:'Take Dag to Small Claims', color:'#94a3b8', type:'hurdle', open:false, archived:false, notes:'', tasks:[
-    { id:'ht1', title:'File claim', manual:false, mun:false, open:false, notes:'', date:'', steps:[mkStep('Fill out small claims form'),mkStep('Pay fee'),mkStep('File paperwork')] },
-    { id:'ht2', title:'Serve Dag', manual:false, mun:false, open:false, notes:'', date:'', steps:[mkStep('Make sure he is present at address'),mkStep('Have a friend or Sheriff serve the papers')] },
-    { id:'ht3', title:'File serving notice', manual:false, mun:false, open:false, notes:'', date:'', steps:[mkStep('Have server fill out paperwork'),mkStep('File serving notice (10+ days before court date)')] },
-    { id:'ht4', title:'Prepare for court date', manual:false, mun:false, open:false, notes:'', date:'', steps:[mkStep('Prepare for the case'),mkStep('Make a timeline'),mkStep('Print out outstanding evidence')] },
-    { id:'ht5', title:'Go to court', manual:false, mun:false, open:false, notes:'', date:'', steps:[] },
-    { id:'ht6', title:'Receive judgement', manual:false, mun:false, open:false, notes:'', date:'', steps:[] },
+    { id:'ht1', title:'File claim', manual:false, manualUnchecked:false, open:false, notes:'', date:'', steps:[mkStep('Fill out small claims form'),mkStep('Pay fee'),mkStep('File paperwork')] },
+    { id:'ht2', title:'Serve Dag', manual:false, manualUnchecked:false, open:false, notes:'', date:'', steps:[mkStep('Make sure he is present at address'),mkStep('Have a friend or Sheriff serve the papers')] },
+    { id:'ht3', title:'File serving notice', manual:false, manualUnchecked:false, open:false, notes:'', date:'', steps:[mkStep('Have server fill out paperwork'),mkStep('File serving notice (10+ days before court date)')] },
+    { id:'ht4', title:'Prepare for court date', manual:false, manualUnchecked:false, open:false, notes:'', date:'', steps:[mkStep('Prepare for the case'),mkStep('Make a timeline'),mkStep('Print out outstanding evidence')] },
+    { id:'ht5', title:'Go to court', manual:false, manualUnchecked:false, open:false, notes:'', date:'', steps:[] },
+    { id:'ht6', title:'Receive judgement', manual:false, manualUnchecked:false, open:false, notes:'', date:'', steps:[] },
   ]},
 ];
 
@@ -375,26 +375,26 @@ function TaskRow({ t, ti, onUpdate, onDelete, tdref, onDrop }) {
 
   const isDone = tDone(t);
   const allSD = t.steps.length>0 && t.steps.every(s=>s.done);
-  const cbAuto = allSD && !t.mun && !t.manual;
+  const cbAuto = allSD && !t.manualUnchecked && !t.manual;
   const upd = patch => onUpdate(ti, {...t, ...patch});
 
   const doCheck = e => {
     e.stopPropagation();
-    if (!t.steps.length) { upd({manual:!t.manual,mun:false}); return; }
+    if (!t.steps.length) { upd({manual:!t.manual,manualUnchecked:false}); return; }
     if (allSD) {
-      upd({mun:!t.mun, manual:false});
+      upd({manualUnchecked:!t.manualUnchecked, manual:false});
     } else {
       const newMan = !t.manual;
       // Fix: checking marks all steps done too
       const steps = newMan ? t.steps.map(s=>({...s,done:true})) : t.steps;
-      upd({manual:newMan, mun:false, steps});
+      upd({manual:newMan, manualUnchecked:false, steps});
     }
   };
 
   const toggleStep = si => {
     const steps = t.steps.map((s,i)=>i===si?{...s,done:!s.done}:s);
     const nowAll = steps.every(s=>s.done);
-    upd({steps, mun:nowAll?t.mun:false, manual:false});
+    upd({steps, manualUnchecked:nowAll?t.manualUnchecked:false, manual:false});
   };
   const addStep = title => upd({steps:[...t.steps, mkStep(title)]});
   const updStep = (si,patch) => upd({steps:t.steps.map((s,i)=>i===si?{...s,...patch}:s)});
@@ -591,15 +591,15 @@ function App() {
   const updGoal = ug => setD(prev=>prev.map(g=>g.id===ug.id?ug:g));
   const delGoal = id => { if(confirm('Delete this goal?')) setD(prev=>prev.filter(g=>g.id!==id)); };
   const dupGoal = g => {
-    const c={...g,id:uid(),title:g.title+' (copy)',archived:false,tasks:g.tasks.map(t=>({...t,id:uid(),manual:false,mun:false,steps:t.steps.map(s=>({...s,id:uid(),done:false}))}))};
+    const c={...g,id:uid(),title:g.title+' (copy)',archived:false,tasks:g.tasks.map(t=>({...t,id:uid(),manual:false,manualUnchecked:false,steps:t.steps.map(s=>({...s,id:uid(),done:false}))}))};
     setD(prev=>[...prev,c]);
   };
   const saveTpl = g => {
-    const tmpl={...g,id:uid(),tasks:g.tasks.map(t=>({...t,id:uid(),manual:false,mun:false,steps:t.steps.map(s=>({...s,id:uid(),done:false}))}))};
+    const tmpl={...g,id:uid(),tasks:g.tasks.map(t=>({...t,id:uid(),manual:false,manualUnchecked:false,steps:t.steps.map(s=>({...s,id:uid(),done:false}))}))};
     setTpls(prev=>[...prev,tmpl]); alert('Saved as template! ✅');
   };
   const useTpl = tmpl => {
-    const g={...tmpl,id:uid(),title:tmpl.title+' (copy)',archived:false,tasks:tmpl.tasks.map(t=>({...t,id:uid(),manual:false,mun:false,steps:t.steps.map(s=>({...s,id:uid(),done:false}))}))};
+    const g={...tmpl,id:uid(),title:tmpl.title+' (copy)',archived:false,tasks:tmpl.tasks.map(t=>({...t,id:uid(),manual:false,manualUnchecked:false,steps:t.steps.map(s=>({...s,id:uid(),done:false}))}))};
     setD(prev=>[...prev,g]); setShowTpl(false);
   };
   const archiveGoal = id => setD(prev=>prev.map(g=>g.id===id?{...g,archived:!g.archived}:g));
