@@ -8,6 +8,7 @@
 <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
 <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
 <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Serif+Display&display=swap" rel="stylesheet">
 <style>
@@ -25,15 +26,26 @@ input, textarea, select, button { font-family: 'DM Sans', sans-serif; }
 ::-webkit-scrollbar { width: 5px; height: 5px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--border-med); border-radius: 4px; }
-
-.nav { position: sticky; top: 0; z-index: 200; background: var(--surface); border-bottom: 1px solid var(--border); display: flex; align-items: center; padding: 0 28px; height: 56px; }
-.nav-brand { font-family: 'DM Serif Display', serif; font-size: 20px; letter-spacing: -0.3px; margin-right: 32px; color: var(--text); }
-.nav-tabs { display: flex; align-items: center; flex: 1; }
-.nav-tab { border: none; background: none; padding: 0 20px; height: 56px; font-size: 14px; font-weight: 400; color: var(--muted); cursor: pointer; border-bottom: 2px solid transparent; transition: color .15s; margin-bottom: -1px; }
+ 
+.nav { position: sticky; top: 0; z-index: 200; background: var(--surface); border-bottom: 1px solid var(--border); display: flex; align-items: center; padding: 0 16px; height: 56px; gap: 4px; }
+.nav-brand { font-family: 'DM Serif Display', serif; font-size: 20px; letter-spacing: -0.3px; margin-right: 16px; color: var(--text); flex-shrink: 0; }
+.nav-tabs { display: flex; align-items: center; flex: 1; min-width: 0; }
+.nav-tab { border: none; background: none; padding: 0 14px; height: 56px; font-size: 14px; font-weight: 400; color: var(--muted); cursor: pointer; border-bottom: 2px solid transparent; transition: color .15s; margin-bottom: -1px; white-space: nowrap; }
 .nav-tab:hover { color: var(--text); }
 .nav-tab.active { color: var(--text); border-bottom-color: var(--text); font-weight: 500; }
-.nav-right { display: flex; gap: 8px; align-items: center; }
-
+.nav-right { display: flex; gap: 6px; align-items: center; flex-shrink: 0; }
+.nav-icon-btn { border: 1px solid var(--border-med); background: var(--surface); color: var(--text); border-radius: var(--radius-sm); width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 18px; transition: all .15s; flex-shrink: 0; }
+.nav-icon-btn:hover { background: var(--surface2); }
+.nav-icon-btn.primary { background: var(--text); border-color: var(--text); }
+.nav-label { display: inline; }
+@media (max-width: 600px) { .nav-label { display: none; } .nav-brand { font-size: 17px; margin-right: 8px; } .nav-tab { padding: 0 10px; font-size: 13px; } }
+ 
+.sync-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; transition: background .3s; }
+.sync-dot.synced { background: #4ade80; }
+.sync-dot.syncing { background: #fbbf24; animation: pulse 1s infinite; }
+.sync-dot.error { background: #f87171; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+ 
 .btn { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--border-med); background: var(--surface); color: var(--text); border-radius: var(--radius-sm); padding: 7px 14px; font-size: 13px; font-weight: 500; cursor: pointer; transition: all .15s; white-space: nowrap; }
 .btn:hover { background: var(--surface2); }
 .btn.primary { background: var(--text); color: white; border-color: var(--text); }
@@ -43,18 +55,17 @@ input, textarea, select, button { font-family: 'DM Sans', sans-serif; }
 .icon-btn { border: none; background: none; color: var(--light); padding: 5px 6px; border-radius: var(--radius-sm); cursor: pointer; font-size: 15px; display: inline-flex; align-items: center; transition: all .15s; line-height: 1; }
 .icon-btn:hover { background: var(--surface2); color: var(--text); }
 .icon-btn.danger:hover { color: var(--danger); background: rgba(192,57,43,.06); }
-
+ 
 .page { padding: 28px; max-width: 900px; margin: 0 auto; }
 .page-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; }
 .page-title { font-family: 'DM Serif Display', serif; font-size: 26px; letter-spacing: -0.3px; }
 .section-label { font-size: 11px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--light); margin: 28px 0 12px; }
 .section-label:first-child { margin-top: 0; }
-
+ 
 .toggle-bar { display: flex; gap: 2px; background: var(--surface2); border-radius: var(--radius-sm); padding: 3px; }
 .toggle-btn { border: none; background: none; padding: 5px 14px; border-radius: calc(var(--radius-sm) - 2px); font-size: 13px; color: var(--muted); cursor: pointer; transition: all .15s; }
 .toggle-btn.active { background: var(--surface); color: var(--text); font-weight: 500; box-shadow: 0 1px 3px rgba(0,0,0,.1); }
-
-/* Race */
+ 
 .race-wrap { display: flex; flex-direction: column; gap: 8px; }
 .track-row { display: flex; align-items: center; gap: 12px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 10px 16px; transition: box-shadow .15s, border-color .15s; cursor: pointer; }
 .track-row:hover { box-shadow: var(--shadow); border-color: var(--border-med); }
@@ -73,8 +84,7 @@ input, textarea, select, button { font-family: 'DM Sans', sans-serif; }
 .track-badge.done { background: var(--accent-light); color: var(--accent); }
 .track-nav-hint { font-size: 11px; color: var(--light); opacity: 0; transition: opacity .15s; white-space: nowrap; flex-shrink: 0; }
 .track-row:hover .track-nav-hint { opacity: 1; }
-
-/* Goal cards */
+ 
 .goal-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; transition: box-shadow .15s, border-color .3s; }
 .goal-card:hover { box-shadow: var(--shadow); }
 .goal-card.highlighted { border-color: #60a5fa; box-shadow: 0 0 0 3px rgba(96,165,250,0.18); }
@@ -86,18 +96,17 @@ input, textarea, select, button { font-family: 'DM Sans', sans-serif; }
 .goal-header:hover .goal-hdr-actions { opacity: 1; }
 .goal-chevron { font-size: 13px; color: var(--light); transition: transform .2s; flex-shrink: 0; }
 .goal-chevron.open { transform: rotate(90deg); }
-
-/* Tasks */
+ 
 .tasks-body { border-top: 1px solid var(--border); }
 .task-item + .task-item { border-top: 1px solid var(--border); }
 .task-header { display: flex; align-items: center; gap: 8px; padding: 9px 16px 9px 34px; cursor: pointer; transition: background .1s; }
 .task-header:hover { background: var(--surface2); }
-
+ 
 .cb { width: 16px; height: 16px; border-radius: 4px; border: 1.5px solid var(--border-med); appearance: none; -webkit-appearance: none; background: none; cursor: pointer; position: relative; flex-shrink: 0; transition: all .15s; }
 .cb:checked { background: var(--text); border-color: var(--text); }
 .cb.auto { background: #aaa; border-color: #aaa; }
 .cb:checked::after, .cb.auto::after { content: ''; position: absolute; left: 4px; top: 1px; width: 5px; height: 9px; border: 2px solid white; border-left: none; border-top: none; transform: rotate(45deg); }
-
+ 
 .task-title { font-size: 13px; flex: 1; }
 .task-title.done { text-decoration: line-through; color: var(--muted); }
 .task-progress { font-size: 11px; color: var(--muted); background: var(--surface2); padding: 1px 7px; border-radius: 10px; flex-shrink: 0; }
@@ -107,8 +116,7 @@ input, textarea, select, button { font-family: 'DM Sans', sans-serif; }
 .task-header:hover .task-actions { opacity: 1; }
 .date-chip { font-size: 11px; color: var(--muted); background: var(--surface2); padding: 1px 7px; border-radius: 10px; flex-shrink: 0; }
 .notes-hint { font-size: 11px; color: var(--light); font-style: italic; flex-shrink: 0; max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-
-/* Steps */
+ 
 .steps-body { padding: 4px 16px 10px 68px; border-top: 1px solid var(--border); background: var(--surface2); }
 .step-row { display: flex; align-items: center; gap: 8px; padding: 5px 0; cursor: grab; }
 .step-row:active { cursor: grabbing; }
@@ -116,7 +124,7 @@ input, textarea, select, button { font-family: 'DM Sans', sans-serif; }
 .step-text.done { text-decoration: line-through; color: var(--light); }
 .step-actions { display: flex; opacity: 0; transition: opacity .15s; }
 .step-row:hover .step-actions { opacity: 1; }
-
+ 
 .add-area { padding: 8px 16px 10px 68px; }
 .add-area.task-add { padding: 10px 16px; border-top: 1px solid var(--border); }
 .add-inline { width: 100%; border: none; border-bottom: 1px solid var(--border-med); background: none; outline: none; font-size: 13px; padding: 3px 0; color: var(--text); }
@@ -124,8 +132,7 @@ input, textarea, select, button { font-family: 'DM Sans', sans-serif; }
 .add-inline:focus { border-bottom-color: var(--text); }
 .add-trigger { display: inline-flex; align-items: center; gap: 5px; border: none; background: none; font-size: 13px; color: var(--light); cursor: pointer; padding: 3px 0; transition: color .15s; }
 .add-trigger:hover { color: var(--text); }
-
-/* Modal */
+ 
 .overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.3); z-index: 1000; display: flex; align-items: center; justify-content: center; padding: 20px; backdrop-filter: blur(2px); }
 .modal { background: var(--surface); border-radius: var(--radius-lg); padding: 26px; width: 100%; max-width: 440px; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,.2); }
 .modal-title { font-family: 'DM Serif Display', serif; font-size: 20px; margin-bottom: 20px; }
@@ -142,51 +149,67 @@ input, textarea, select, button { font-family: 'DM Sans', sans-serif; }
 .color-dot:hover { transform: scale(1.1); }
 .color-dot.sel { border-color: var(--text); transform: scale(1.15); }
 .modal-footer { display: flex; gap: 8px; justify-content: flex-end; margin-top: 20px; }
-
+ 
 .empty { text-align: center; padding: 48px 20px; color: var(--light); font-size: 14px; }
 .empty .emoji { font-size: 32px; margin-bottom: 10px; }
 .drag-handle { color: var(--border-med); cursor: grab; font-size: 14px; flex-shrink: 0; }
 .drag-handle:active { cursor: grabbing; }
 .drop-target { background: var(--accent-light) !important; }
+ 
+.loading-screen { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 60vh; gap: 16px; color: var(--muted); font-size: 14px; }
+.loading-spinner { width: 28px; height: 28px; border: 2px solid var(--border); border-top-color: var(--text); border-radius: 50%; animation: spin .7s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
 </style>
 </head>
 <body>
 <div id="root"></div>
 <script type="text/babel">
-const { useState, useEffect, useRef } = React;
-
+const { useState, useEffect, useRef, useCallback } = React;
+ 
+// ── Supabase ──
+const SUPABASE_URL = 'https://gezkqfvxcwguehsvqtnt.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdlemtxZnZ4Y3dndWVoc3ZxdG50Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ4Mjk1OTIsImV4cCI6MjA5MDQwNTU5Mn0.ZC3_hqz2gh9C4pnTyb4foZUAFGx1ksqsPNigsGuQGzA';
+const ROW_ID = 'main'; // single row stores entire app state
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+ 
+async function loadFromSupabase() {
+  const { data, error } = await sb.from('goals').select('data').eq('id', ROW_ID).single();
+  if (error || !data) return null;
+  return data.data;
+}
+ 
+async function saveToSupabase(appData) {
+  const { error } = await sb.from('goals').upsert({ id: ROW_ID, data: appData, updated_at: new Date().toISOString() });
+  if (error) throw error;
+}
+ 
+// ── Helpers ──
 const uid = () => Math.random().toString(36).slice(2, 9);
-
 const COLORS = ['#e8e8e4','#94a3b8','#f87171','#fb923c','#fbbf24','#facc15','#a3e635','#4ade80','#2dd4bf','#38bdf8','#60a5fa','#a78bfa','#f472b6','#fb7185'];
-
+ 
 const mkStep = (title='') => ({ id:uid(), title, done:false, notes:'', date:'' });
 const mkTask = (title='') => ({ id:uid(), title, manual:false, manualUnchecked:false, steps:[], open:false, notes:'', date:'' });
 const mkGoal = (title='', color='#60a5fa', type='goal') => ({ id:uid(), title, color, type, tasks:[], open:false, archived:false, notes:'' });
-
-// Fix #4: three-state logic
-// manualUnchecked = user explicitly unchecked even when all steps done (steps stay done)
-// manual = user explicitly checked (used for tasks with no steps, or override)
-// allStepsDone = auto-check
+ 
 function taskDone(t) {
   if (t.manualUnchecked) return false;
   if (t.manual) return true;
   if (t.steps.length === 0) return false;
   return t.steps.every(s => s.done);
 }
-
 function stepProg(t) {
   if (t.steps.length === 0) return null;
   const done = t.steps.filter(s => s.done).length;
   return { done, total: t.steps.length, pct: Math.round(done / t.steps.length * 100) };
 }
-
 function goalProg(g) {
   const total = g.tasks.length;
   const done = g.tasks.filter(taskDone).length;
   return { done, total, pct: total ? Math.round(done/total*100) : 0 };
 }
 function goalComplete(g) { const {done,total}=goalProg(g); return total>0&&done===total; }
-
+ 
+// ── Default data (used only on first load) ──
 const DEFAULT = [
   { id:'g1', title:'Move into my own house', color:'#e8e8e4', type:'goal', open:false, archived:false, notes:'', tasks:[
     { id:'t1', title:'Research houses', manual:false, manualUnchecked:false, open:false, notes:'', date:'', steps:[mkStep('Look at houses on Zillow using filters'),mkStep('Make sure houses are not RSO'),mkStep('Shortlist favorite houses'),mkStep('Plan a tour with broker'),mkStep('See houses'),mkStep('Pick favorite')] },
@@ -209,10 +232,10 @@ const DEFAULT = [
     { id:'ht6', title:'Receive judgement', manual:false, manualUnchecked:false, open:false, notes:'', date:'', steps:[] },
   ]},
 ];
-
-function load() { try { const s=localStorage.getItem('gr_v3'); if(s) return JSON.parse(s); } catch(e){} return JSON.parse(JSON.stringify(DEFAULT)); }
-function loadTpl() { try { const s=localStorage.getItem('gr_templates'); if(s) return JSON.parse(s); } catch(e){} return []; }
-
+ 
+function loadTemplates() { try { const s=localStorage.getItem('gr_templates'); if(s) return JSON.parse(s); } catch(e){} return []; }
+ 
+// ── Modals ──
 function GoalModal({ initial, onClose, onSave }) {
   const [title,setTitle]=useState(initial?.title||'');
   const [color,setColor]=useState(initial?.color||'#60a5fa');
@@ -241,7 +264,7 @@ function GoalModal({ initial, onClose, onSave }) {
     </div>
   );
 }
-
+ 
 function ItemModal({ title:mt, initial, onClose, onSave }) {
   const [title,setTitle]=useState(initial?.title||'');
   const [notes,setNotes]=useState(initial?.notes||'');
@@ -261,7 +284,7 @@ function ItemModal({ title:mt, initial, onClose, onSave }) {
     </div>
   );
 }
-
+ 
 function TemplatesModal({ templates, onClose, onUse, onDelete }) {
   return (
     <div className="overlay" onClick={e=>e.target===e.currentTarget&&onClose()}>
@@ -281,15 +304,16 @@ function TemplatesModal({ templates, onClose, onUse, onDelete }) {
     </div>
   );
 }
-
+ 
 function TrackRow({ g, onNavigate }) {
   const {done,total,pct}=goalProg(g);
   const isH=g.type==='hurdle', complete=goalComplete(g);
-  const color=isH?'#c0bfba':g.color, emoji=isH?'🪨':'🐎';
+  const color=isH?'#c0bfba':g.color;
+  const emoji=isH?'🪨':'🐎';
   const endEmoji=isH?'🗑️':(complete?'🏆':'🏁');
   const progress=total>0?done/total:0;
   return (
-    <div className="track-row" style={{opacity:g.archived?0.55:1}} onClick={onNavigate} title="Click to go to tasks">
+    <div className="track-row" style={{opacity:g.archived?0.55:1}} onClick={onNavigate}>
       <div className="track-name" title={g.title}>{g.title}</div>
       <div className="track-body">
         <div className="track-cells-wrap">
@@ -307,7 +331,7 @@ function TrackRow({ g, onNavigate }) {
     </div>
   );
 }
-
+ 
 function StepRow({ s, onToggle, onEdit, onDelete, dragIdx, idx, onDrop }) {
   const [over,setOver]=useState(false);
   return (
@@ -329,44 +353,32 @@ function StepRow({ s, onToggle, onEdit, onDelete, dragIdx, idx, onDrop }) {
     </div>
   );
 }
-
+ 
 function TaskRow({ t, ti, onUpdate, onDelete, dragIdx, onDrop }) {
   const [editStep,setEditStep]=useState(null);
   const [addingStep,setAddingStep]=useState(false);
   const [editSelf,setEditSelf]=useState(false);
   const stepDragIdx=useRef(null);
   const [over,setOver]=useState(false);
-
+ 
   const isDone=taskDone(t);
   const allStepsDone=t.steps.length>0&&t.steps.every(s=>s.done);
-  // gray check = auto (all steps done, not manually unchecked)
   const cbIsAuto=allStepsDone&&!t.manualUnchecked&&!t.manual;
-
   const upd=patch=>onUpdate(ti,{...t,...patch});
   const toggleExpand=e=>{e.stopPropagation();upd({open:!t.open});};
-
-  // Fix #4: proper three-state toggle
+ 
   const toggleCheck=e=>{
     e.stopPropagation();
-    if(t.steps.length===0){
-      upd({manual:!t.manual,manualUnchecked:false});
-      return;
-    }
-    if(allStepsDone){
-      // toggle between auto-checked and manually-unchecked (steps stay done)
-      upd({manualUnchecked:!t.manualUnchecked,manual:false});
-    } else {
-      upd({manual:!t.manual,manualUnchecked:false});
-    }
+    if(t.steps.length===0){ upd({manual:!t.manual,manualUnchecked:false}); return; }
+    if(allStepsDone){ upd({manualUnchecked:!t.manualUnchecked,manual:false}); }
+    else { upd({manual:!t.manual,manualUnchecked:false}); }
   };
-
+ 
   const toggleStep=si=>{
     const steps=t.steps.map((s,i)=>i===si?{...s,done:!s.done}:s);
     const nowAllDone=steps.every(s=>s.done);
-    // if steps no longer all done, clear manualUnchecked
     upd({steps,manualUnchecked:nowAllDone?t.manualUnchecked:false,manual:false});
   };
-
   const addStep=title=>upd({steps:[...t.steps,mkStep(title)]});
   const updateStep=(si,patch)=>upd({steps:t.steps.map((s,i)=>i===si?{...s,...patch}:s)});
   const deleteStep=si=>upd({steps:t.steps.filter((_,i)=>i!==si)});
@@ -375,10 +387,8 @@ function TaskRow({ t, ti, onUpdate, onDelete, dragIdx, onDrop }) {
     const steps=[...t.steps];const[m]=steps.splice(stepDragIdx.current,1);steps.splice(toIdx,0,m);
     upd({steps});stepDragIdx.current=null;
   };
-
-  // Fix #3: step progress pill
   const prog=stepProg(t);
-
+ 
   return (
     <div className={`task-item ${over?'drop-target':''}`} draggable
       onDragStart={e=>{e.stopPropagation();dragIdx.current=ti;}}
@@ -388,8 +398,7 @@ function TaskRow({ t, ti, onUpdate, onDelete, dragIdx, onDrop }) {
     >
       <div className="task-header" onClick={toggleExpand}>
         <span className={`task-chevron ${t.open?'open':''}`}>▶</span>
-        <input type="checkbox" className={`cb ${cbIsAuto?'auto':''}`}
-          checked={isDone} onChange={toggleCheck} onClick={e=>e.stopPropagation()}/>
+        <input type="checkbox" className={`cb ${cbIsAuto?'auto':''}`} checked={isDone} onChange={toggleCheck} onClick={e=>e.stopPropagation()}/>
         <span className={`task-title ${isDone?'done':''}`}>{t.title}</span>
         {prog&&<span className="task-progress">{prog.done}/{prog.total} · {prog.pct}%</span>}
         {t.date&&<span className="date-chip">📅 {t.date}</span>}
@@ -421,21 +430,19 @@ function TaskRow({ t, ti, onUpdate, onDelete, dragIdx, onDrop }) {
     </div>
   );
 }
-
+ 
 function GoalCard({ g, onUpdate, onDelete, onDuplicate, onSaveTemplate, onArchive, highlighted }) {
   const [editGoal,setEditGoal]=useState(false);
   const [addTask,setAddTask]=useState(false);
   const taskDragIdx=useRef(null);
   const cardRef=useRef(null);
-
-  useEffect(()=>{
-    if(highlighted&&cardRef.current) cardRef.current.scrollIntoView({behavior:'smooth',block:'start'});
-  },[highlighted]);
-
+ 
+  useEffect(()=>{ if(highlighted&&cardRef.current) cardRef.current.scrollIntoView({behavior:'smooth',block:'start'}); },[highlighted]);
+ 
   const upd=patch=>onUpdate({...g,...patch});
   const {done,total,pct}=goalProg(g);
-  const complete=goalComplete(g), isH=g.type==='hurdle';
-
+  const complete=goalComplete(g),isH=g.type==='hurdle';
+ 
   const updateTask=(ti,patch)=>{ const tasks=g.tasks.map((t,i)=>i===ti?{...t,...patch}:t); upd({tasks}); };
   const deleteTask=ti=>{ if(confirm('Delete this task?')) upd({tasks:g.tasks.filter((_,i)=>i!==ti)}); };
   const reorderTask=toIdx=>{
@@ -444,7 +451,7 @@ function GoalCard({ g, onUpdate, onDelete, onDuplicate, onSaveTemplate, onArchiv
     upd({tasks});taskDragIdx.current=null;
   };
   const handleAddTask=d=>{ const t={...mkTask(d.title),notes:d.notes,date:d.date}; upd({tasks:[...g.tasks,t]}); setAddTask(false); };
-
+ 
   return (
     <div ref={cardRef} className={`goal-card ${highlighted?'highlighted':''}`}>
       <div className="goal-header" onClick={()=>upd({open:!g.open})}>
@@ -478,40 +485,90 @@ function GoalCard({ g, onUpdate, onDelete, onDuplicate, onSaveTemplate, onArchiv
     </div>
   );
 }
-
+ 
+// ── App ──
 function App() {
   const [tab,setTab]=useState('race');
-  const [data,setData]=useState(load);
-  const [templates,setTemplates]=useState(loadTpl);
+  const [data,setData]=useState(null); // null = loading
+  const [templates,setTemplates]=useState(loadTemplates);
   const [newGoal,setNewGoal]=useState(false);
   const [showTpl,setShowTpl]=useState(false);
   const [filter,setFilter]=useState('active');
   const [highlightId,setHighlightId]=useState(null);
-
-  useEffect(()=>{try{localStorage.setItem('gr_v3',JSON.stringify(data));}catch(e){}},[data]);
-  useEffect(()=>{try{localStorage.setItem('gr_templates',JSON.stringify(templates));}catch(e){}},[templates]);
-
+  const [syncStatus,setSyncStatus]=useState('synced'); // synced | syncing | error
+  const saveTimer=useRef(null);
+  const latestData=useRef(null);
+ 
+  // Load from Supabase on mount
+  useEffect(()=>{
+    loadFromSupabase().then(remote=>{
+      if(remote && Array.isArray(remote)) {
+        setData(remote);
+      } else {
+        // First time — seed with default data
+        setData(JSON.parse(JSON.stringify(DEFAULT)));
+      }
+    }).catch(()=>{
+      // Fallback to default if Supabase unreachable
+      setData(JSON.parse(JSON.stringify(DEFAULT)));
+      setSyncStatus('error');
+    });
+  },[]);
+ 
+  // Debounced save to Supabase (500ms after last change)
+  const scheduleSave = useCallback((newData)=>{
+    latestData.current = newData;
+    setSyncStatus('syncing');
+    if(saveTimer.current) clearTimeout(saveTimer.current);
+    saveTimer.current = setTimeout(async ()=>{
+      try {
+        await saveToSupabase(latestData.current);
+        setSyncStatus('synced');
+      } catch(e) {
+        setSyncStatus('error');
+      }
+    }, 500);
+  },[]);
+ 
+  const setDataAndSave = useCallback((updater)=>{
+    setData(prev=>{
+      const next = typeof updater==='function' ? updater(prev) : updater;
+      scheduleSave(next);
+      return next;
+    });
+  },[scheduleSave]);
+ 
+  // Templates stay in localStorage (personal, device-specific)
+  useEffect(()=>{ try{localStorage.setItem('gr_templates',JSON.stringify(templates));}catch(e){} },[templates]);
+ 
   useEffect(()=>{
     if(!highlightId)return;
     const t=setTimeout(()=>setHighlightId(null),1800);
     return()=>clearTimeout(t);
   },[highlightId]);
-
-  // Fix #2: click track → go to goal tasks tab, open the goal, scroll & highlight
+ 
   const navigateToGoal=g=>{
-    setData(prev=>prev.map(x=>x.id===g.id?{...x,open:true}:x));
+    setDataAndSave(prev=>prev.map(x=>x.id===g.id?{...x,open:true}:x));
     setHighlightId(g.id);
     setTab('tasks');
   };
-
-  const addGoal=d=>{ const g={...mkGoal(d.title,d.color,d.type),notes:d.notes}; setData(prev=>[...prev,g]); setNewGoal(false); };
-  const updateGoal=updated=>setData(prev=>prev.map(g=>g.id===updated.id?updated:g));
-  const deleteGoal=id=>{ if(confirm('Delete this goal and all its tasks?')) setData(prev=>prev.filter(g=>g.id!==id)); };
-  const duplicateGoal=g=>{ const copy={...g,id:uid(),title:g.title+' (copy)',archived:false,tasks:g.tasks.map(t=>({...t,id:uid(),manual:false,manualUnchecked:false,steps:t.steps.map(s=>({...s,id:uid(),done:false}))}))}; setData(prev=>[...prev,copy]); };
+ 
+  const addGoal=d=>{ const g={...mkGoal(d.title,d.color,d.type),notes:d.notes}; setDataAndSave(prev=>[...prev,g]); setNewGoal(false); };
+  const updateGoal=updated=>setDataAndSave(prev=>prev.map(g=>g.id===updated.id?updated:g));
+  const deleteGoal=id=>{ if(confirm('Delete this goal and all its tasks?')) setDataAndSave(prev=>prev.filter(g=>g.id!==id)); };
+  const duplicateGoal=g=>{ const copy={...g,id:uid(),title:g.title+' (copy)',archived:false,tasks:g.tasks.map(t=>({...t,id:uid(),manual:false,manualUnchecked:false,steps:t.steps.map(s=>({...s,id:uid(),done:false}))}))}; setDataAndSave(prev=>[...prev,copy]); };
   const saveTemplate=g=>{ const tmpl={...g,id:uid(),tasks:g.tasks.map(t=>({...t,id:uid(),manual:false,manualUnchecked:false,steps:t.steps.map(s=>({...s,id:uid(),done:false}))}))}; setTemplates(prev=>[...prev,tmpl]); alert('Saved as template! ✅'); };
-  const useTemplate=tmpl=>{ const g={...tmpl,id:uid(),title:tmpl.title+' (copy)',archived:false,tasks:tmpl.tasks.map(t=>({...t,id:uid(),manual:false,manualUnchecked:false,steps:t.steps.map(s=>({...s,id:uid(),done:false}))}))}; setData(prev=>[...prev,g]); setShowTpl(false); };
-  const archiveGoal=id=>setData(prev=>prev.map(g=>g.id===id?{...g,archived:!g.archived}:g));
-
+  const useTemplate=tmpl=>{ const g={...tmpl,id:uid(),title:tmpl.title+' (copy)',archived:false,tasks:tmpl.tasks.map(t=>({...t,id:uid(),manual:false,manualUnchecked:false,steps:t.steps.map(s=>({...s,id:uid(),done:false}))}))}; setDataAndSave(prev=>[...prev,g]); setShowTpl(false); };
+  const archiveGoal=id=>setDataAndSave(prev=>prev.map(g=>g.id===id?{...g,archived:!g.archived}:g));
+ 
+  // Loading screen
+  if(data===null) return (
+    <div className="loading-screen">
+      <div className="loading-spinner"/>
+      <span>Loading your goals…</span>
+    </div>
+  );
+ 
   const goals=data.filter(g=>g.type==='goal');
   const hurdles=data.filter(g=>g.type==='hurdle');
   const filterList=list=>{
@@ -519,7 +576,9 @@ function App() {
     if(filter==='completed')return list.filter(g=>goalComplete(g)||g.archived);
     return list;
   };
-
+ 
+  const syncLabel = syncStatus==='syncing'?'Saving…':syncStatus==='error'?'Sync error':'Saved';
+ 
   return (
     <div>
       <nav className="nav">
@@ -528,12 +587,13 @@ function App() {
           <button className={`nav-tab ${tab==='race'?'active':''}`} onClick={()=>setTab('race')}>The Race</button>
           <button className={`nav-tab ${tab==='tasks'?'active':''}`} onClick={()=>setTab('tasks')}>Goal Tasks</button>
         </div>
-        {tab==='tasks'&&<div className="nav-right">
-          <button className="btn" onClick={()=>setShowTpl(true)}>🔖 Templates</button>
-          <button className="btn primary" onClick={()=>setNewGoal(true)}>＋ New goal</button>
-        </div>}
+        <div className="nav-right">
+          <div className={`sync-dot ${syncStatus}`} title={syncLabel}/>
+          <button className="nav-icon-btn" onClick={()=>setShowTpl(true)} title="Templates">🔖</button>
+          <button className="nav-icon-btn primary" onClick={()=>setNewGoal(true)} title="New goal" style={{fontSize:22,color:'white'}}>＋</button>
+        </div>
       </nav>
-
+ 
       {tab==='race'&&(
         <div className="page">
           <div className="page-header">
@@ -555,7 +615,7 @@ function App() {
           </>}
         </div>
       )}
-
+ 
       {tab==='tasks'&&(
         <div className="page">
           <div className="page-header">
@@ -577,13 +637,13 @@ function App() {
           {data.length===0&&<div className="empty"><div className="emoji">🚀</div>No goals yet. Hit "New goal" to get started!</div>}
         </div>
       )}
-
+ 
       {newGoal&&<GoalModal onClose={()=>setNewGoal(false)} onSave={addGoal}/>}
       {showTpl&&<TemplatesModal templates={templates} onClose={()=>setShowTpl(false)} onUse={useTemplate} onDelete={id=>setTemplates(prev=>prev.filter(t=>t.id!==id))}/>}
     </div>
   );
 }
-
+ 
 ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
 </script>
 </body>
