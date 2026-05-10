@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Goal Race</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐎</text></svg>">
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Serif+Display&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #f7f6f2; --surface: #ffffff; --surface2: #f0efe9;
+  --border: rgba(0,0,0,0.09); --border-med: rgba(0,0,0,0.15);
+  --text: #1c1c1a; --muted: #7a7a72; --light: #b0afa8;
+  --accent: #2d6a4f; --accent-light: #e8f4ed;
+  --danger: #c0392b; --radius-sm: 6px; --radius: 10px; --radius-lg: 14px;
+  --shadow: 0 1px 3px rgba(0,0,0,0.07), 0 4px 16px rgba(0,0,0,0.05);
+}
+body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; -webkit-font-smoothing: antialiased; }
+input, textarea, select, button { font-family: 'DM Sans', sans-serif; }
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border-med); border-radius: 4px; }
+
+.nav { position: sticky; top: 0; z-index: 200; background: var(--surface); border-bottom: 1px solid var(--border); display: flex; align-items: center; padding: 0 28px; height: 56px; }
+.nav-brand { font-family: 'DM Serif Display', serif; font-size: 20px; letter-spacing: -0.3px; margin-right: 32px; color: var(--text); }
+.nav-tabs { display: flex; align-items: center; flex: 1; }
+.nav-tab { border: none; background: none; padding: 0 20px; height: 56px; font-size: 14px; font-weight: 400; color: var(--muted); cursor: pointer; border-bottom: 2px solid transparent; transition: color .15s; margin-bottom: -1px; }
+.nav-tab:hover { color: var(--text); }
+.nav-tab.active { color: var(--text); border-bottom-color: var(--text); font-weight: 500; }
+.nav-right { display: flex; gap: 8px; align-items: center; }
+
+.btn { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--border-med); background: var(--surface); color: var(--text); border-radius: var(--radius-sm); padding: 7px 14px; font-size: 13px; font-weight: 500; cursor: pointer; transition: all .15s; white-space: nowrap; }
+.btn:hover { background: var(--surface2); }
+.btn.primary { background: var(--text); color: white; border-color: var(--text); }
+.btn.primary:hover { background: #333; }
+.btn.danger { color: var(--danger); border-color: rgba(192,57,43,.25); }
+.btn.danger:hover { background: rgba(192,57,43,.06); }
+.icon-btn { border: none; background: none; color: var(--light); padding: 5px 6px; border-radius: var(--radius-sm); cursor: pointer; font-size: 15px; display: inline-flex; align-items: center; transition: all .15s; line-height: 1; }
+.icon-btn:hover { background: var(--surface2); color: var(--text); }
+.icon-btn.danger:hover { color: var(--danger); background: rgba(192,57,43,.06); }
+
+.page { padding: 28px; max-width: 900px; margin: 0 auto; }
+.page-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; }
+.page-title { font-family: 'DM Serif Display', serif; font-size: 26px; letter-spacing: -0.3px; }
+.section-label { font-size: 11px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--light); margin: 28px 0 12px; }
+.section-label:first-child { margin-top: 0; }
+
+.toggle-bar { display: flex; gap: 2px; background: var(--surface2); border-radius: var(--radius-sm); padding: 3px; }
+.toggle-btn { border: none; background: none; padding: 5px 14px; border-radius: calc(var(--radius-sm) - 2px); font-size: 13px; color: var(--muted); cursor: pointer; transition: all .15s; }
+.toggle-btn.active { background: var(--surface); color: var(--text); font-weight: 500; box-shadow: 0 1px 3px rgba(0,0,0,.1); }
+
+/* Race */
+.race-wrap { display: flex; flex-direction: column; gap: 8px; }
+.track-row { display: flex; align-items: center; gap: 12px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 10px 16px; transition: box-shadow .15s, border-color .15s; cursor: pointer; }
+.track-row:hover { box-shadow: var(--shadow); border-color: var(--border-med); }
+.track-name { width: 160px; min-width: 160px; font-size: 13px; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.track-body { flex: 1; display: flex; align-items: center; gap: 8px; }
+.track-cells-wrap { flex: 1; position: relative; display: flex; align-items: center; height: 32px; }
+.track-cells { display: flex; gap: 3px; width: 100%; height: 100%; align-items: center; }
+.track-cell { flex: 1; height: 24px; border-radius: 4px; transition: opacity .3s; }
+.track-cell.on { opacity: 1; }
+.track-cell.off { opacity: 0.15; }
+.track-mover { position: absolute; font-size: 22px; top: 50%; transform: translateY(-50%); transition: left .6s cubic-bezier(.34, 1.56, .64, 1); z-index: 5; line-height: 1; pointer-events: none; filter: drop-shadow(0 2px 4px rgba(0,0,0,.15)); }
+.track-end { font-size: 22px; flex-shrink: 0; }
+.track-pct { font-size: 11px; color: var(--muted); width: 32px; text-align: right; flex-shrink: 0; }
+.track-badge { font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 20px; letter-spacing: .04em; }
+.track-badge.archived { background: var(--surface2); color: var(--light); }
+.track-badge.done { background: var(--accent-light); color: var(--accent); }
+.track-nav-hint { font-size: 11px; color: var(--light); opacity: 0; transition: opacity .15s; white-space: nowrap; flex-shrink: 0; }
+.track-row:hover .track-nav-hint { opacity: 1; }
+
+/* Goal cards */
+.goal-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; transition: box-shadow .15s, border-color .3s; }
+.goal-card:hover { box-shadow: var(--shadow); }
+.goal-card.highlighted { border-color: #60a5fa; box-shadow: 0 0 0 3px rgba(96,165,250,0.18); }
+.goal-header { display: flex; align-items: center; gap: 10px; padding: 13px 16px; cursor: pointer; user-select: none; }
+.goal-color-dot { width: 13px; height: 13px; border-radius: 50%; flex-shrink: 0; border: 1.5px solid rgba(0,0,0,0.1); }
+.goal-title-text { font-size: 14px; font-weight: 500; flex: 1; }
+.goal-meta { font-size: 12px; color: var(--muted); flex-shrink: 0; }
+.goal-hdr-actions { display: flex; gap: 2px; opacity: 0; transition: opacity .15s; }
+.goal-header:hover .goal-hdr-actions { opacity: 1; }
+.goal-chevron { font-size: 13px; color: var(--light); transition: transform .2s; flex-shrink: 0; }
+.goal-chevron.open { transform: rotate(90deg); }
+
+/* Tasks */
+.tasks-body { border-top: 1px solid var(--border); }
+.task-item + .task-item { border-top: 1px solid var(--border); }
+.task-header { display: flex; align-items: center; gap: 8px; padding: 9px 16px 9px 34px; cursor: pointer; transition: background .1s; }
+.task-header:hover { background: var(--surface2); }
+
+.cb { width: 16px; height: 16px; border-radius: 4px; border: 1.5px solid var(--border-med); appearance: none; -webkit-appearance: none; background: none; cursor: pointer; position: relative; flex-shrink: 0; transition: all .15s; }
+.cb:checked { background: var(--text); border-color: var(--text); }
+.cb.auto { background: #aaa; border-color: #aaa; }
+.cb:checked::after, .cb.auto::after { content: ''; position: absolute; left: 4px; top: 1px; width: 5px; height: 9px; border: 2px solid white; border-left: none; border-top: none; transform: rotate(45deg); }
+
+.task-title { font-size: 13px; flex: 1; }
+.task-title.done { text-decoration: line-through; color: var(--muted); }
+.task-progress { font-size: 11px; color: var(--muted); background: var(--surface2); padding: 1px 7px; border-radius: 10px; flex-shrink: 0; }
+.task-chevron { font-size: 11px; color: var(--light); transition: transform .2s; }
+.task-chevron.open { transform: rotate(90deg); }
+.task-actions { display: flex; opacity: 0; transition: opacity .15s; }
+.task-header:hover .task-actions { opacity: 1; }
+.date-chip { font-size: 11px; color: var(--muted); background: var(--surface2); padding: 1px 7px; border-radius: 10px; flex-shrink: 0; }
+.notes-hint { font-size: 11px; color: var(--light); font-style: italic; flex-shrink: 0; max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* Steps */
+.steps-body { padding: 4px 16px 10px 68px; border-top: 1px solid var(--border); background: var(--surface2); }
+.step-row { display: flex; align-items: center; gap: 8px; padding: 5px 0; cursor: grab; }
+.step-row:active { cursor: grabbing; }
+.step-text { font-size: 12px; color: #444; flex: 1; }
+.step-text.done { text-decoration: line-through; color: var(--light); }
+.step-actions { display: flex; opacity: 0; transition: opacity .15s; }
+.step-row:hover .step-actions { opacity: 1; }
+
+.add-area { padding: 8px 16px 10px 68px; }
+.add-area.task-add { padding: 10px 16px; border-top: 1px solid var(--border); }
+.add-inline { width: 100%; border: none; border-bottom: 1px solid var(--border-med); background: none; outline: none; font-size: 13px; padding: 3px 0; color: var(--text); }
+.add-inline::placeholder { color: var(--light); }
+.add-inline:focus { border-bottom-color: var(--text); }
+.add-trigger { display: inline-flex; align-items: center; gap: 5px; border: none; background: none; font-size: 13px; color: var(--light); cursor: pointer; padding: 3px 0; transition: color .15s; }
+.add-trigger:hover { color: var(--text); }
+
+/* Modal */
+.overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.3); z-index: 1000; display: flex; align-items: center; justify-content: center; padding: 20px; backdrop-filter: blur(2px); }
+.modal { background: var(--surface); border-radius: var(--radius-lg); padding: 26px; width: 100%; max-width: 440px; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,.2); }
+.modal-title { font-family: 'DM Serif Display', serif; font-size: 20px; margin-bottom: 20px; }
+.field { margin-bottom: 16px; }
+.field label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 6px; font-weight: 500; }
+.field input, .field textarea { width: 100%; border: 1px solid var(--border-med); border-radius: var(--radius-sm); padding: 9px 12px; font-size: 14px; background: var(--bg); color: var(--text); outline: none; transition: border-color .15s; }
+.field input:focus, .field textarea:focus { border-color: var(--text); }
+.field textarea { resize: vertical; min-height: 70px; }
+.type-toggle { display: flex; gap: 8px; }
+.type-btn { flex: 1; padding: 9px; border-radius: var(--radius-sm); border: 1px solid var(--border-med); background: none; cursor: pointer; font-size: 14px; font-family: 'DM Sans', sans-serif; color: var(--muted); transition: all .15s; }
+.type-btn.active { background: var(--text); color: white; border-color: var(--text); font-weight: 500; }
+.colors-grid { display: flex; flex-wrap: wrap; gap: 10px; }
+.color-dot { width: 30px; height: 30px; border-radius: 50%; cursor: pointer; border: 2.5px solid transparent; transition: transform .15s, border-color .15s; }
+.color-dot:hover { transform: scale(1.1); }
+.color-dot.sel { border-color: var(--text); transform: scale(1.15); }
+.modal-footer { display: flex; gap: 8px; justify-content: flex-end; margin-top: 20px; }
+
+.empty { text-align: center; padding: 48px 20px; color: var(--light); font-size: 14px; }
+.empty .emoji { font-size: 32px; margin-bottom: 10px; }
+.drag-handle { color: var(--border-med); cursor: grab; font-size: 14px; flex-shrink: 0; }
+.drag-handle:active { cursor: grabbing; }
+.drop-target { background: var(--accent-light) !important; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useEffect, useRef } = React;
+
+const uid = () => Math.random().toString(36).slice(2, 9);
+
+const COLORS = ['#e8e8e4','#94a3b8','#f87171','#fb923c','#fbbf24','#facc15','#a3e635','#4ade80','#2dd4bf','#38bdf8','#60a5fa','#a78bfa','#f472b6','#fb7185'];
+
+const mkStep = (title='') => ({ id:uid(), title, done:false, notes:'', date:'' });
+const mkTask = (title='') => ({ id:uid(), title, manual:false, manualUnchecked:false, steps:[], open:false, notes:'', date:'' });
+const mkGoal = (title='', color='#60a5fa', type='goal') => ({ id:uid(), title, color, type, tasks:[], open:false, archived:false, notes:'' });
+
+// Fix #4: three-state logic
+// manualUnchecked = user explicitly unchecked even when all steps done (steps stay done)
+// manual = user explicitly checked (used for tasks with no steps, or override)
+// allStepsDone = auto-check
+function taskDone(t) {
+  if (t.manualUnchecked) return false;
+  if (t.manual) return true;
+  if (t.steps.length === 0) return false;
+  return t.steps.every(s => s.done);
+}
+
+function stepProg(t) {
+  if (t.steps.length === 0) return null;
+  const done = t.steps.filter(s => s.done).length;
+  return { done, total: t.steps.length, pct: Math.round(done / t.steps.length * 100) };
+}
+
+function goalProg(g) {
+  const total = g.tasks.length;
+  const done = g.tasks.filter(taskDone).length;
+  return { done, total, pct: total ? Math.round(done/total*100) : 0 };
+}
+function goalComplete(g) { const {done,total}=goalProg(g); return total>0&&done===total; }
+
+const DEFAULT = [
+  { id:'g1', title:'Move into my own house', color:'#e8e8e4', type:'goal', open:false, archived:false, notes:'', tasks:[
+    { id:'t1', title:'Research houses', manual:false, manualUnchecked:false, open:false, notes:'', date:'', steps:[mkStep('Look at houses on Zillow using filters'),mkStep('Make sure houses are not RSO'),mkStep('Shortlist favorite houses'),mkStep('Plan a tour with broker'),mkStep('See houses'),mkStep('Pick favorite')] },
+    { id:'t2', title:'Get an offer accepted', manual:false, manualUnchecked:false, open:false, notes:'', date:'', steps:[mkStep('Fill out paperwork'),mkStep('Send offer'),mkStep('Review counter offer'),mkStep('Send final offer')] },
+    { id:'t3', title:'Open escrow', manual:false, manualUnchecked:false, open:false, notes:'', date:'', steps:[mkStep('Sign agreement'),mkStep('Pay Earnest Money Deposit')] },
+    { id:'t4', title:'Make house inspections', manual:false, manualUnchecked:false, open:false, notes:'', date:'', steps:[mkStep('Schedule general inspection'),mkStep('Schedule sewer inspection'),mkStep('Schedule termites inspection'),mkStep('Pay inspections'),mkStep('Be present at inspections')] },
+    { id:'t5', title:'Get appraisal', manual:false, manualUnchecked:false, open:false, notes:'', date:'', steps:[mkStep('Provide all necessary paperwork'),mkStep('Sign contract'),mkStep('Get appraisal')] },
+    { id:'t6', title:'Get loan', manual:false, manualUnchecked:false, open:false, notes:'', date:'', steps:[mkStep('Provide all necessary paperwork'),mkStep('Sign contract'),mkStep('Get approved')] },
+    { id:'t7', title:'Remove all contingencies', manual:false, manualUnchecked:false, open:false, notes:'', date:'', steps:[mkStep('Remove inspection contingency'),mkStep('Remove interest rate contingency'),mkStep('Remove loan contingency')] },
+    { id:'t8', title:'Make down payment', manual:false, manualUnchecked:false, open:false, notes:'', date:'', steps:[mkStep('Make sure money needed is available'),mkStep('Deposit remainder of down payment')] },
+    { id:'t9', title:'Final touches', manual:false, manualUnchecked:false, open:false, notes:'', date:'', steps:[mkStep('Make necessary improvements after inspections'),mkStep('Negotiate repairs to be made by seller'),mkStep('Make sure all paperwork is done'),mkStep('Get home insurance')] },
+    { id:'t10', title:'Move', manual:false, manualUnchecked:false, open:false, notes:'', date:'', steps:[mkStep('Research movers in the area'),mkStep('Get a quote'),mkStep('Schedule movers'),mkStep('Move')] },
+  ]},
+  { id:'h1', title:'Take Dag to Small Claims', color:'#94a3b8', type:'hurdle', open:false, archived:false, notes:'', tasks:[
+    { id:'ht1', title:'File claim', manual:false, manualUnchecked:false, open:false, notes:'', date:'', steps:[mkStep('Fill out small claims form'),mkStep('Pay fee'),mkStep('File paperwork')] },
+    { id:'ht2', title:'Serve Dag', manual:false, manualUnchecked:false, open:false, notes:'', date:'', steps:[mkStep('Make sure he is present at address'),mkStep('Have a friend or Sheriff serve the papers')] },
+    { id:'ht3', title:'File serving notice', manual:false, manualUnchecked:false, open:false, notes:'', date:'', steps:[mkStep('Have server fill out paperwork'),mkStep('File serving notice (10+ days before court date)')] },
+    { id:'ht4', title:'Prepare for court date', manual:false, manualUnchecked:false, open:false, notes:'', date:'', steps:[mkStep('Prepare for the case'),mkStep('Make a timeline'),mkStep('Print out outstanding evidence')] },
+    { id:'ht5', title:'Go to court', manual:false, manualUnchecked:false, open:false, notes:'', date:'', steps:[] },
+    { id:'ht6', title:'Receive judgement', manual:false, manualUnchecked:false, open:false, notes:'', date:'', steps:[] },
+  ]},
+];
+
+function load() { try { const s=localStorage.getItem('gr_v3'); if(s) return JSON.parse(s); } catch(e){} return JSON.parse(JSON.stringify(DEFAULT)); }
+function loadTpl() { try { const s=localStorage.getItem('gr_templates'); if(s) return JSON.parse(s); } catch(e){} return []; }
+
+function GoalModal({ initial, onClose, onSave }) {
+  const [title,setTitle]=useState(initial?.title||'');
+  const [color,setColor]=useState(initial?.color||'#60a5fa');
+  const [type,setType]=useState(initial?.type||'goal');
+  const [notes,setNotes]=useState(initial?.notes||'');
+  return (
+    <div className="overlay" onClick={e=>e.target===e.currentTarget&&onClose()}>
+      <div className="modal">
+        <div className="modal-title">{initial?'Edit':'New'} {type==='hurdle'?'Hurdle':'Goal'}</div>
+        <div className="field"><label>Type</label>
+          <div className="type-toggle">
+            <button className={`type-btn ${type==='goal'?'active':''}`} onClick={()=>setType('goal')}>🎯 Goal</button>
+            <button className={`type-btn ${type==='hurdle'?'active':''}`} onClick={()=>setType('hurdle')}>🪨 Hurdle</button>
+          </div>
+        </div>
+        <div className="field"><label>Title</label>
+          <input autoFocus value={title} onChange={e=>setTitle(e.target.value)} placeholder={type==='hurdle'?'What is blocking you?':'What do you want to achieve?'} />
+        </div>
+        {type==='goal'&&<div className="field"><label>Track color</label><div className="colors-grid">{COLORS.map(c=><div key={c} className={`color-dot ${color===c?'sel':''}`} style={{background:c}} onClick={()=>setColor(c)}/>)}</div></div>}
+        <div className="field"><label>Notes (optional)</label><textarea value={notes} onChange={e=>setNotes(e.target.value)} placeholder="Any context…"/></div>
+        <div className="modal-footer">
+          <button className="btn" onClick={onClose}>Cancel</button>
+          <button className="btn primary" onClick={()=>title.trim()&&onSave({title:title.trim(),color,type,notes})}>{initial?'Save changes':'Create'}</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ItemModal({ title:mt, initial, onClose, onSave }) {
+  const [title,setTitle]=useState(initial?.title||'');
+  const [notes,setNotes]=useState(initial?.notes||'');
+  const [date,setDate]=useState(initial?.date||'');
+  return (
+    <div className="overlay" onClick={e=>e.target===e.currentTarget&&onClose()}>
+      <div className="modal">
+        <div className="modal-title">{mt}</div>
+        <div className="field"><label>Title</label><input autoFocus value={title} onChange={e=>setTitle(e.target.value)}/></div>
+        <div className="field"><label>Due date (optional)</label><input type="date" value={date} onChange={e=>setDate(e.target.value)}/></div>
+        <div className="field"><label>Notes (optional)</label><textarea value={notes} onChange={e=>setNotes(e.target.value)}/></div>
+        <div className="modal-footer">
+          <button className="btn" onClick={onClose}>Cancel</button>
+          <button className="btn primary" onClick={()=>title.trim()&&onSave({title:title.trim(),notes,date})}>Save</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function TemplatesModal({ templates, onClose, onUse, onDelete }) {
+  return (
+    <div className="overlay" onClick={e=>e.target===e.currentTarget&&onClose()}>
+      <div className="modal">
+        <div className="modal-title">Templates</div>
+        {templates.length===0&&<p style={{fontSize:14,color:'var(--muted)',marginBottom:16}}>No templates yet. Use the 🔖 icon on any goal to save it as a template.</p>}
+        {templates.map(t=>(
+          <div key={t.id} style={{display:'flex',alignItems:'center',gap:10,padding:'10px 0',borderBottom:'1px solid var(--border)'}}>
+            <div style={{width:14,height:14,borderRadius:'50%',background:t.color,border:'1.5px solid rgba(0,0,0,.1)',flexShrink:0}}/>
+            <div style={{flex:1}}><div style={{fontSize:14,fontWeight:500}}>{t.title}</div><div style={{fontSize:12,color:'var(--muted)'}}>{t.tasks.length} tasks</div></div>
+            <button className="btn" style={{padding:'5px 12px',fontSize:12}} onClick={()=>onUse(t)}>Use template</button>
+            <button className="icon-btn danger" onClick={()=>onDelete(t.id)}>🗑</button>
+          </div>
+        ))}
+        <div className="modal-footer"><button className="btn" onClick={onClose}>Close</button></div>
+      </div>
+    </div>
+  );
+}
+
+function TrackRow({ g, onNavigate }) {
+  const {done,total,pct}=goalProg(g);
+  const isH=g.type==='hurdle', complete=goalComplete(g);
+  const color=isH?'#c0bfba':g.color, emoji=isH?'🪨':'🐎';
+  const endEmoji=isH?'🗑️':(complete?'🏆':'🏁');
+  const progress=total>0?done/total:0;
+  return (
+    <div className="track-row" style={{opacity:g.archived?0.55:1}} onClick={onNavigate} title="Click to go to tasks">
+      <div className="track-name" title={g.title}>{g.title}</div>
+      <div className="track-body">
+        <div className="track-cells-wrap">
+          <div className="track-cells">
+            {Array.from({length:Math.max(total,1)}).map((_,i)=><div key={i} className={`track-cell ${i<done?'on':'off'}`} style={{background:color}}/>)}
+          </div>
+          {total>0&&<div className="track-mover" style={{left:`calc(${progress*100}% - ${progress>0?12:0}px)`}}>{emoji}</div>}
+        </div>
+        <div className="track-end">{endEmoji}</div>
+        <div className="track-pct">{pct}%</div>
+      </div>
+      {g.archived&&<span className="track-badge archived">archived</span>}
+      {complete&&!g.archived&&<span className="track-badge done">done!</span>}
+      <span className="track-nav-hint">→ tasks</span>
+    </div>
+  );
+}
+
+function StepRow({ s, onToggle, onEdit, onDelete, dragIdx, idx, onDrop }) {
+  const [over,setOver]=useState(false);
+  return (
+    <div className={`step-row ${over?'drop-target':''}`} draggable
+      onDragStart={()=>{dragIdx.current=idx;}}
+      onDragOver={e=>{e.preventDefault();setOver(true);}}
+      onDragLeave={()=>setOver(false)}
+      onDrop={e=>{e.preventDefault();setOver(false);onDrop(idx);}}
+    >
+      <span className="drag-handle">⠿</span>
+      <input type="checkbox" className="cb" checked={s.done} onChange={onToggle} onClick={e=>e.stopPropagation()}/>
+      <span className={`step-text ${s.done?'done':''}`}>{s.title}</span>
+      {s.date&&<span className="date-chip">📅 {s.date}</span>}
+      {s.notes&&<span className="notes-hint" title={s.notes}>"{s.notes}"</span>}
+      <div className="step-actions">
+        <button className="icon-btn" onClick={onEdit}>✏️</button>
+        <button className="icon-btn danger" onClick={onDelete}>🗑</button>
+      </div>
+    </div>
+  );
+}
+
+function TaskRow({ t, ti, onUpdate, onDelete, dragIdx, onDrop }) {
+  const [editStep,setEditStep]=useState(null);
+  const [addingStep,setAddingStep]=useState(false);
+  const [editSelf,setEditSelf]=useState(false);
+  const stepDragIdx=useRef(null);
+  const [over,setOver]=useState(false);
+
+  const isDone=taskDone(t);
+  const allStepsDone=t.steps.length>0&&t.steps.every(s=>s.done);
+  // gray check = auto (all steps done, not manually unchecked)
+  const cbIsAuto=allStepsDone&&!t.manualUnchecked&&!t.manual;
+
+  const upd=patch=>onUpdate(ti,{...t,...patch});
+  const toggleExpand=e=>{e.stopPropagation();upd({open:!t.open});};
+
+  // Fix #4: proper three-state toggle
+  const toggleCheck=e=>{
+    e.stopPropagation();
+    if(t.steps.length===0){
+      upd({manual:!t.manual,manualUnchecked:false});
+      return;
+    }
+    if(allStepsDone){
+      // toggle between auto-checked and manually-unchecked (steps stay done)
+      upd({manualUnchecked:!t.manualUnchecked,manual:false});
+    } else {
+      upd({manual:!t.manual,manualUnchecked:false});
+    }
+  };
+
+  const toggleStep=si=>{
+    const steps=t.steps.map((s,i)=>i===si?{...s,done:!s.done}:s);
+    const nowAllDone=steps.every(s=>s.done);
+    // if steps no longer all done, clear manualUnchecked
+    upd({steps,manualUnchecked:nowAllDone?t.manualUnchecked:false,manual:false});
+  };
+
+  const addStep=title=>upd({steps:[...t.steps,mkStep(title)]});
+  const updateStep=(si,patch)=>upd({steps:t.steps.map((s,i)=>i===si?{...s,...patch}:s)});
+  const deleteStep=si=>upd({steps:t.steps.filter((_,i)=>i!==si)});
+  const reorderStep=toIdx=>{
+    if(stepDragIdx.current===null||stepDragIdx.current===toIdx)return;
+    const steps=[...t.steps];const[m]=steps.splice(stepDragIdx.current,1);steps.splice(toIdx,0,m);
+    upd({steps});stepDragIdx.current=null;
+  };
+
+  // Fix #3: step progress pill
+  const prog=stepProg(t);
+
+  return (
+    <div className={`task-item ${over?'drop-target':''}`} draggable
+      onDragStart={e=>{e.stopPropagation();dragIdx.current=ti;}}
+      onDragOver={e=>{e.preventDefault();setOver(true);}}
+      onDragLeave={()=>setOver(false)}
+      onDrop={e=>{e.preventDefault();setOver(false);onDrop(ti);}}
+    >
+      <div className="task-header" onClick={toggleExpand}>
+        <span className={`task-chevron ${t.open?'open':''}`}>▶</span>
+        <input type="checkbox" className={`cb ${cbIsAuto?'auto':''}`}
+          checked={isDone} onChange={toggleCheck} onClick={e=>e.stopPropagation()}/>
+        <span className={`task-title ${isDone?'done':''}`}>{t.title}</span>
+        {prog&&<span className="task-progress">{prog.done}/{prog.total} · {prog.pct}%</span>}
+        {t.date&&<span className="date-chip">📅 {t.date}</span>}
+        {t.notes&&<span className="notes-hint" title={t.notes}>"{t.notes}"</span>}
+        <div className="task-actions" onClick={e=>e.stopPropagation()}>
+          <button className="icon-btn" onClick={()=>setEditSelf(true)}>✏️</button>
+          <button className="icon-btn danger" onClick={()=>onDelete(ti)}>🗑</button>
+        </div>
+        <span className="drag-handle">⠿</span>
+      </div>
+      {t.open&&(
+        <div className="steps-body">
+          {t.steps.map((s,si)=>(
+            <StepRow key={s.id} s={s} idx={si} dragIdx={stepDragIdx}
+              onToggle={()=>toggleStep(si)} onEdit={()=>setEditStep({s,si})}
+              onDelete={()=>deleteStep(si)} onDrop={reorderStep}/>
+          ))}
+          {addingStep?(
+            <div style={{padding:'6px 0'}}>
+              <input className="add-inline" autoFocus placeholder="Step title…"
+                onKeyDown={e=>{if(e.key==='Enter'&&e.target.value.trim()){addStep(e.target.value.trim());e.target.value='';setAddingStep(false);}if(e.key==='Escape')setAddingStep(false);}}
+                onBlur={e=>{if(e.target.value.trim())addStep(e.target.value.trim());setAddingStep(false);}}/>
+            </div>
+          ):<button className="add-trigger" style={{marginTop:4}} onClick={()=>setAddingStep(true)}>＋ Add step</button>}
+        </div>
+      )}
+      {editSelf&&<ItemModal title="Edit task" initial={t} onClose={()=>setEditSelf(false)} onSave={d=>{upd(d);setEditSelf(false);}}/>}
+      {editStep&&<ItemModal title="Edit step" initial={editStep.s} onClose={()=>setEditStep(null)} onSave={d=>{updateStep(editStep.si,d);setEditStep(null);}}/>}
+    </div>
+  );
+}
+
+function GoalCard({ g, onUpdate, onDelete, onDuplicate, onSaveTemplate, onArchive, highlighted }) {
+  const [editGoal,setEditGoal]=useState(false);
+  const [addTask,setAddTask]=useState(false);
+  const taskDragIdx=useRef(null);
+  const cardRef=useRef(null);
+
+  useEffect(()=>{
+    if(highlighted&&cardRef.current) cardRef.current.scrollIntoView({behavior:'smooth',block:'start'});
+  },[highlighted]);
+
+  const upd=patch=>onUpdate({...g,...patch});
+  const {done,total,pct}=goalProg(g);
+  const complete=goalComplete(g), isH=g.type==='hurdle';
+
+  const updateTask=(ti,patch)=>{ const tasks=g.tasks.map((t,i)=>i===ti?{...t,...patch}:t); upd({tasks}); };
+  const deleteTask=ti=>{ if(confirm('Delete this task?')) upd({tasks:g.tasks.filter((_,i)=>i!==ti)}); };
+  const reorderTask=toIdx=>{
+    if(taskDragIdx.current===null||taskDragIdx.current===toIdx)return;
+    const tasks=[...g.tasks];const[m]=tasks.splice(taskDragIdx.current,1);tasks.splice(toIdx,0,m);
+    upd({tasks});taskDragIdx.current=null;
+  };
+  const handleAddTask=d=>{ const t={...mkTask(d.title),notes:d.notes,date:d.date}; upd({tasks:[...g.tasks,t]}); setAddTask(false); };
+
+  return (
+    <div ref={cardRef} className={`goal-card ${highlighted?'highlighted':''}`}>
+      <div className="goal-header" onClick={()=>upd({open:!g.open})}>
+        <div className="goal-color-dot" style={{background:isH?'#c0bfba':g.color}}/>
+        <span className="goal-title-text">{g.title}</span>
+        <span className="goal-meta">{done}/{total} · {pct}%</span>
+        {complete&&<span className="track-badge done" style={{marginRight:4}}>✓ done</span>}
+        {g.archived&&<span className="track-badge archived" style={{marginRight:4}}>archived</span>}
+        <div className="goal-hdr-actions" onClick={e=>e.stopPropagation()}>
+          <button className="icon-btn" title="Edit" onClick={()=>setEditGoal(true)}>✏️</button>
+          <button className="icon-btn" title="Duplicate" onClick={()=>onDuplicate(g)}>⧉</button>
+          <button className="icon-btn" title="Save as template" onClick={()=>onSaveTemplate(g)}>🔖</button>
+          <button className="icon-btn" title={g.archived?'Unarchive':'Archive'} onClick={()=>onArchive(g.id)}>{g.archived?'📤':'📦'}</button>
+          <button className="icon-btn danger" title="Delete" onClick={()=>onDelete(g.id)}>🗑</button>
+        </div>
+        <span className={`goal-chevron ${g.open?'open':''}`}>▶</span>
+      </div>
+      {g.open&&(
+        <div className="tasks-body">
+          {g.tasks.length===0&&<div style={{padding:'14px 16px',fontSize:13,color:'var(--muted)'}}>No tasks yet.</div>}
+          {g.tasks.map((t,ti)=>(
+            <TaskRow key={t.id} t={t} ti={ti} onUpdate={updateTask} onDelete={deleteTask} dragIdx={taskDragIdx} onDrop={reorderTask}/>
+          ))}
+          <div className="add-area task-add">
+            <button className="add-trigger" onClick={()=>setAddTask(true)}>＋ Add task</button>
+          </div>
+        </div>
+      )}
+      {editGoal&&<GoalModal initial={g} onClose={()=>setEditGoal(false)} onSave={d=>{upd(d);setEditGoal(false);}}/>}
+      {addTask&&<ItemModal title="New task" onClose={()=>setAddTask(false)} onSave={handleAddTask}/>}
+    </div>
+  );
+}
+
+function App() {
+  const [tab,setTab]=useState('race');
+  const [data,setData]=useState(load);
+  const [templates,setTemplates]=useState(loadTpl);
+  const [newGoal,setNewGoal]=useState(false);
+  const [showTpl,setShowTpl]=useState(false);
+  const [filter,setFilter]=useState('active');
+  const [highlightId,setHighlightId]=useState(null);
+
+  useEffect(()=>{try{localStorage.setItem('gr_v3',JSON.stringify(data));}catch(e){}},[data]);
+  useEffect(()=>{try{localStorage.setItem('gr_templates',JSON.stringify(templates));}catch(e){}},[templates]);
+
+  useEffect(()=>{
+    if(!highlightId)return;
+    const t=setTimeout(()=>setHighlightId(null),1800);
+    return()=>clearTimeout(t);
+  },[highlightId]);
+
+  // Fix #2: click track → go to goal tasks tab, open the goal, scroll & highlight
+  const navigateToGoal=g=>{
+    setData(prev=>prev.map(x=>x.id===g.id?{...x,open:true}:x));
+    setHighlightId(g.id);
+    setTab('tasks');
+  };
+
+  const addGoal=d=>{ const g={...mkGoal(d.title,d.color,d.type),notes:d.notes}; setData(prev=>[...prev,g]); setNewGoal(false); };
+  const updateGoal=updated=>setData(prev=>prev.map(g=>g.id===updated.id?updated:g));
+  const deleteGoal=id=>{ if(confirm('Delete this goal and all its tasks?')) setData(prev=>prev.filter(g=>g.id!==id)); };
+  const duplicateGoal=g=>{ const copy={...g,id:uid(),title:g.title+' (copy)',archived:false,tasks:g.tasks.map(t=>({...t,id:uid(),manual:false,manualUnchecked:false,steps:t.steps.map(s=>({...s,id:uid(),done:false}))}))}; setData(prev=>[...prev,copy]); };
+  const saveTemplate=g=>{ const tmpl={...g,id:uid(),tasks:g.tasks.map(t=>({...t,id:uid(),manual:false,manualUnchecked:false,steps:t.steps.map(s=>({...s,id:uid(),done:false}))}))}; setTemplates(prev=>[...prev,tmpl]); alert('Saved as template! ✅'); };
+  const useTemplate=tmpl=>{ const g={...tmpl,id:uid(),title:tmpl.title+' (copy)',archived:false,tasks:tmpl.tasks.map(t=>({...t,id:uid(),manual:false,manualUnchecked:false,steps:t.steps.map(s=>({...s,id:uid(),done:false}))}))}; setData(prev=>[...prev,g]); setShowTpl(false); };
+  const archiveGoal=id=>setData(prev=>prev.map(g=>g.id===id?{...g,archived:!g.archived}:g));
+
+  const goals=data.filter(g=>g.type==='goal');
+  const hurdles=data.filter(g=>g.type==='hurdle');
+  const filterList=list=>{
+    if(filter==='active')return list.filter(g=>!g.archived&&!goalComplete(g));
+    if(filter==='completed')return list.filter(g=>goalComplete(g)||g.archived);
+    return list;
+  };
+
+  return (
+    <div>
+      <nav className="nav">
+        <div className="nav-brand">🐎 Goal Race</div>
+        <div className="nav-tabs">
+          <button className={`nav-tab ${tab==='race'?'active':''}`} onClick={()=>setTab('race')}>The Race</button>
+          <button className={`nav-tab ${tab==='tasks'?'active':''}`} onClick={()=>setTab('tasks')}>Goal Tasks</button>
+        </div>
+        {tab==='tasks'&&<div className="nav-right">
+          <button className="btn" onClick={()=>setShowTpl(true)}>🔖 Templates</button>
+          <button className="btn primary" onClick={()=>setNewGoal(true)}>＋ New goal</button>
+        </div>}
+      </nav>
+
+      {tab==='race'&&(
+        <div className="page">
+          <div className="page-header">
+            <div className="page-title">The Race</div>
+            <div className="toggle-bar">
+              {[['active','Active'],['completed','Completed'],['all','All']].map(([v,l])=>(
+                <button key={v} className={`toggle-btn ${filter===v?'active':''}`} onClick={()=>setFilter(v)}>{l}</button>
+              ))}
+            </div>
+          </div>
+          <div className="section-label">Goals</div>
+          <div className="race-wrap">
+            {filterList(goals).length===0&&<div className="empty"><div className="emoji">🎯</div>No goals to show here.</div>}
+            {filterList(goals).map(g=><TrackRow key={g.id} g={g} onNavigate={()=>navigateToGoal(g)}/>)}
+          </div>
+          {filterList(hurdles).length>0&&<>
+            <div className="section-label">Hurdles</div>
+            <div className="race-wrap">{filterList(hurdles).map(g=><TrackRow key={g.id} g={g} onNavigate={()=>navigateToGoal(g)}/>)}</div>
+          </>}
+        </div>
+      )}
+
+      {tab==='tasks'&&(
+        <div className="page">
+          <div className="page-header">
+            <div className="page-title">Goal Tasks</div>
+            <span style={{fontSize:13,color:'var(--muted)'}}>{data.length} total</span>
+          </div>
+          {goals.length>0&&<>
+            <div className="section-label">Goals</div>
+            <div style={{display:'flex',flexDirection:'column',gap:10,marginBottom:hurdles.length>0?32:0}}>
+              {goals.map(g=><GoalCard key={g.id} g={g} onUpdate={updateGoal} onDelete={deleteGoal} onDuplicate={duplicateGoal} onSaveTemplate={saveTemplate} onArchive={archiveGoal} highlighted={highlightId===g.id}/>)}
+            </div>
+          </>}
+          {hurdles.length>0&&<>
+            <div className="section-label">Hurdles</div>
+            <div style={{display:'flex',flexDirection:'column',gap:10}}>
+              {hurdles.map(g=><GoalCard key={g.id} g={g} onUpdate={updateGoal} onDelete={deleteGoal} onDuplicate={duplicateGoal} onSaveTemplate={saveTemplate} onArchive={archiveGoal} highlighted={highlightId===g.id}/>)}
+            </div>
+          </>}
+          {data.length===0&&<div className="empty"><div className="emoji">🚀</div>No goals yet. Hit "New goal" to get started!</div>}
+        </div>
+      )}
+
+      {newGoal&&<GoalModal onClose={()=>setNewGoal(false)} onSave={addGoal}/>}
+      {showTpl&&<TemplatesModal templates={templates} onClose={()=>setShowTpl(false)} onUse={useTemplate} onDelete={id=>setTemplates(prev=>prev.filter(t=>t.id!==id))}/>}
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+</body>
+</html>
