@@ -371,13 +371,18 @@ function TaskRow({ t, ti, onUpdate, onDelete, dragIdx, onDrop }) {
   const allStepsDone=t.steps.length>0&&t.steps.every(s=>s.done);
   const cbIsAuto=allStepsDone&&!t.manualUnchecked&&!t.manual;
   const upd=patch=>onUpdate(ti,{...t,...patch});
-  const toggleExpand=e=>{e.stopPropagation();upd({open:!t.open});};
+  const toggleExpand=e=>{upd({open:!t.open});};
 
   const toggleCheck=e=>{
     e.stopPropagation();
     if(t.steps.length===0){ upd({manual:!t.manual,manualUnchecked:false}); return; }
     if(allStepsDone){ upd({manualUnchecked:!t.manualUnchecked,manual:false}); }
-    else { upd({manual:!t.manual,manualUnchecked:false}); }
+    else {
+      // Fix 2: checking a task marks all its steps as done too
+      const newManual = !t.manual;
+      const steps = newManual ? t.steps.map(s=>({...s,done:true})) : t.steps;
+      upd({manual:newManual,manualUnchecked:false,steps});
+    }
   };
 
   const toggleStep=si=>{
@@ -402,18 +407,24 @@ function TaskRow({ t, ti, onUpdate, onDelete, dragIdx, onDrop }) {
       onDragLeave={()=>setOver(false)}
       onDrop={e=>{e.preventDefault();setOver(false);onDrop(ti);}}
     >
-      <div className="task-header" onClick={toggleExpand}>
-        <span className={`task-chevron ${t.open?'open':''}`}>▶</span>
-        <input type="checkbox" className={`cb ${cbIsAuto?'auto':''}`} checked={isDone} onChange={toggleCheck} onClick={e=>e.stopPropagation()}/>
-        <span className={`task-title ${isDone?'done':''}`}>{t.title}</span>
-        {prog&&<span className="task-progress">{prog.done}/{prog.total} · {prog.pct}%</span>}
-        {t.date&&<span className="date-chip">📅 {t.date}</span>}
-        {t.notes&&<span className="notes-hint" title={t.notes}>"{t.notes}"</span>}
-        <div className="task-actions" onClick={e=>e.stopPropagation()}>
-          <button className="icon-btn" onClick={()=>setEditSelf(true)}>✏️</button>
-          <button className="icon-btn danger" onClick={()=>onDelete(ti)}>🗑</button>
+      <div className="task-header">
+        <div style={{display:'flex',alignItems:'center',gap:8,flex:1,cursor:'pointer'}} onClick={toggleExpand}>
+          <span className={`task-chevron ${t.open?'open':''}`}>▶</span>
+          <input type="checkbox" className={`cb ${cbIsAuto?'auto':''}`} checked={isDone}
+            onChange={toggleCheck}
+            onClick={e=>e.stopPropagation()}
+            style={{flexShrink:0}}
+          />
+          <span className={`task-title ${isDone?'done':''}`}>{t.title}</span>
+          {prog&&<span className="task-progress">{prog.done}/{prog.total} · {prog.pct}%</span>}
+          {t.date&&<span className="date-chip">📅 {t.date}</span>}
+          {t.notes&&<span className="notes-hint" title={t.notes}>"{t.notes}"</span>}
         </div>
-        <span className="drag-handle">⠿</span>
+        <div className="task-actions" style={{opacity:1}}>
+          <button className="icon-btn" onClick={e=>{e.stopPropagation();setEditSelf(true);}}>✏️</button>
+          <button className="icon-btn danger" onClick={e=>{e.stopPropagation();onDelete(ti);}}>🗑</button>
+        </div>
+        <span className="drag-handle" onClick={e=>e.stopPropagation()}>⠿</span>
       </div>
       {t.open&&(
         <div className="steps-body">
@@ -437,11 +448,12 @@ function TaskRow({ t, ti, onUpdate, onDelete, dragIdx, onDrop }) {
   );
 }
 
-function GoalCard({ g, onUpdate, onDelete, onDuplicate, onSaveTemplate, onArchive, highlighted }) {
+function GoalCard({ g, onUpdate, onDelete, onDuplicate, onSaveTemplate, onArchive, highlighted, dragIdx, onDrop }) {
   const [editGoal,setEditGoal]=useState(false);
   const [addTask,setAddTask]=useState(false);
   const taskDragIdx=useRef(null);
   const cardRef=useRef(null);
+  const [over,setOver]=useState(false);
 
   useEffect(()=>{ if(highlighted&&cardRef.current) cardRef.current.scrollIntoView({behavior:'smooth',block:'start'}); },[highlighted]);
 
@@ -459,8 +471,15 @@ function GoalCard({ g, onUpdate, onDelete, onDuplicate, onSaveTemplate, onArchiv
   const handleAddTask=d=>{ const t={...mkTask(d.title),notes:d.notes,date:d.date}; upd({tasks:[...g.tasks,t]}); setAddTask(false); };
 
   return (
-    <div ref={cardRef} className={`goal-card ${highlighted?'highlighted':''}`}>
+    <div ref={cardRef} className={`goal-card ${highlighted?'highlighted':''} ${over?'drop-target':''}`}
+      draggable
+      onDragStart={e=>{e.stopPropagation(); dragIdx.current=g.id;}}
+      onDragOver={e=>{e.preventDefault();setOver(true);}}
+      onDragLeave={()=>setOver(false)}
+      onDrop={e=>{e.preventDefault();setOver(false);onDrop(g.id);}}
+    >
       <div className="goal-header" onClick={()=>upd({open:!g.open})}>
+        <span className="drag-handle" onClick={e=>e.stopPropagation()} style={{marginRight:2}}>⠿</span>
         <div className="goal-color-dot" style={{background:isH?'#c0bfba':g.color}}/>
         <span className="goal-title-text">{g.title}</span>
         <span className="goal-meta">{done}/{total} · {pct}%</span>
@@ -559,6 +578,22 @@ function App() {
     setTab('tasks');
   };
 
+  const goalDragId=useRef(null);
+
+  const reorderGoals=toId=>{
+    if(goalDragId.current===null||goalDragId.current===toId)return;
+    setDataAndSave(prev=>{
+      const next=[...prev];
+      const fromIdx=next.findIndex(g=>g.id===goalDragId.current);
+      const toIdx=next.findIndex(g=>g.id===toId);
+      if(fromIdx===-1||toIdx===-1)return prev;
+      const[m]=next.splice(fromIdx,1);
+      next.splice(toIdx,0,m);
+      return next;
+    });
+    goalDragId.current=null;
+  };
+
   const addGoal=d=>{ const g={...mkGoal(d.title,d.color,d.type),notes:d.notes}; setDataAndSave(prev=>[...prev,g]); setNewGoal(false); };
   const updateGoal=updated=>setDataAndSave(prev=>prev.map(g=>g.id===updated.id?updated:g));
   const deleteGoal=id=>{ if(confirm('Delete this goal and all its tasks?')) setDataAndSave(prev=>prev.filter(g=>g.id!==id)); };
@@ -631,13 +666,14 @@ function App() {
           {goals.length>0&&<>
             <div className="section-label">Goals</div>
             <div style={{display:'flex',flexDirection:'column',gap:10,marginBottom:hurdles.length>0?32:0}}>
-              {goals.map(g=><GoalCard key={g.id} g={g} onUpdate={updateGoal} onDelete={deleteGoal} onDuplicate={duplicateGoal} onSaveTemplate={saveTemplate} onArchive={archiveGoal} highlighted={highlightId===g.id}/>)}
+              {goals.map(g=><GoalCard key={g.id} g={g} onUpdate={updateGoal} onDelete={deleteGoal} onDuplicate={duplicateGoal} onSaveTemplate={saveTemplate} onArchive={archiveGoal} highlighted={highlightId===g.id} dragIdx={goalDragId} onDrop={reorderGoals}/>)}
+            </div>
             </div>
           </>}
           {hurdles.length>0&&<>
             <div className="section-label">Hurdles</div>
             <div style={{display:'flex',flexDirection:'column',gap:10}}>
-              {hurdles.map(g=><GoalCard key={g.id} g={g} onUpdate={updateGoal} onDelete={deleteGoal} onDuplicate={duplicateGoal} onSaveTemplate={saveTemplate} onArchive={archiveGoal} highlighted={highlightId===g.id}/>)}
+              {hurdles.map(g=><GoalCard key={g.id} g={g} onUpdate={updateGoal} onDelete={deleteGoal} onDuplicate={duplicateGoal} onSaveTemplate={saveTemplate} onArchive={archiveGoal} highlighted={highlightId===g.id} dragIdx={goalDragId} onDrop={reorderGoals}/>)}
             </div>
           </>}
           {data.length===0&&<div className="empty"><div className="emoji">🚀</div>No goals yet. Hit "New goal" to get started!</div>}
