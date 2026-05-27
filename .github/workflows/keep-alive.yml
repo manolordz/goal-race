@@ -1,0 +1,17 @@
+name: Keep Supabase Alive
+
+on:
+  schedule:
+    - cron: '0 12 */6 * *'  # runs every 6 days at noon UTC
+  workflow_dispatch:          # lets you run it manually too
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Supabase
+        run: |
+          curl -s -o /dev/null -w "%{http_code}" \
+            -H "apikey: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdlemtxZnZ4Y3dndWVoc3ZxdG50Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ4Mjk1OTIsImV4cCI6MjA5MDQwNTU5Mn0.ZC3_hqz2gh9C4pnTyb4foZUAFGx1ksqsPNigsGuQGzA" \
+            -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdlemtxZnZ4Y3dndWVoc3ZxdG50Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ4Mjk1OTIsImV4cCI6MjA5MDQwNTU5Mn0.ZC3_hqz2gh9C4pnTyb4foZUAFGx1ksqsPNigsGuQGzA" \
+            "https://gezkqfvxcwguehsvqtnt.supabase.co/rest/v1/goals?select=id&limit=1"
